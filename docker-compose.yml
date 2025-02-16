@@ -1,0 +1,12 @@
+version: "3.8"
+
+services:
+  microservico1:
+    build: ./microservic-01
+    ports:
+      - "8001:8001"
+
+  microservico2:
+    build: ./microservico-02
+    ports:
+      - "8002:8002"
