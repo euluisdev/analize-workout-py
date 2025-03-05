@@ -6,6 +6,10 @@ import io
 import base64 
 import os
 import jwt
+import plotly.graph_objects as go
+from datetime import datetime
+
+
 from dotenv import load_dotenv
 from bson import ObjectId
 from fastapi.middleware.cors import CORSMiddleware
@@ -74,23 +78,30 @@ async def get_workouts(email: str = Depends(verify_token), req: Request = None):
     df["date"] = pd.to_datetime(df["date"])
     df["week"] = df["date"].dt.strftime('%Y-%U')
 
-    weekly_counts = df["week"].value_counts().sort_index()
+    weekly_counts = df["week"].value_counts().sort_index().astype(int)
+
+    current_week = datetime.now().strftime('%Y-%U')
     
-    # Criar o gráfico
-    plt.figure(figsize=(8, 5))
-    weekly_counts.plot(kind="bar", color="yellow", alpha=0.7)
-    plt.title(f"Frequência de Treinos por Semana - Usuário {user_id}")
-    plt.xlabel("Semana")
-    plt.ylabel("Quantidade de Treinos")
-    plt.xticks(rotation=45)
+    # Criar gráfico com Plotly
+    fig = go.Figure()
+    fig.add_trace(go.Bar(
+        x=weekly_counts.index.tolist(), 
+        y=weekly_counts.values.astype(int), 
+        marker_color="gold",
+        opacity=0.7
+    ))
 
-    img = io.BytesIO()
-    plt.savefig(img, format="png")
-    plt.close()
-    img_base64 = base64.b64encode(img.getvalue()).decode("utf-8")
+    fig.update_layout(
+        title=f"Frequência de Treinos por Semana - Semana Atual: {current_week}",
+        xaxis_title="Semana",
+        yaxis_title="Quantidade de Treinos",
+        template="plotly_dark", 
+        xaxis=dict(type="category"), 
+         yaxis=dict(tickmode="linear", tick0=0, dtick=1)
+    )
 
-
-    return {"image": f"data:image/png;base64,{img_base64}"}
+    # Retornar o JSON do gráfico para o frontend renderizar
+    return fig.to_json()
 
 
 
